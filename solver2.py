@@ -188,9 +188,10 @@ class PDTSPGeneticAlgorithm:
         plt.ylabel('Fitness')
         plt.grid(True)
         # Do not call plt.show() here; we simply want to debug.
-        plt.close()  # Close the figure to avoid interference.
+        fitness_fig = plt.gcf()
+        plt.close(fitness_fig)
+        return best_solution, best_fitness, fitness_fig
 
-        return best_solution, best_fitness
 
     # def plot_routes(self, solution, title='Solution Routes'):
     #     plt.figure(figsize=(10, 8))
@@ -398,7 +399,8 @@ def run_ga(num_customers, num_trucks, num_drones, travel_costs, service_times, t
         mutation_rate=mutation_rate,
         crossover_rate=crossover_rate
     )
-    best_solution, best_fitness = solver.solve()
+    best_solution, best_fitness, fitness_fig = solver.solve()
+
     result_text = solver.get_solution_text(best_solution)
     
     # Let solver.plot_routes create the figure.
@@ -409,5 +411,11 @@ def run_ga(num_customers, num_trucks, num_drones, travel_costs, service_times, t
     fig.savefig(buf, format="png")
     buf.seek(0)
     plt.close(fig)
+    fitness_buf = io.BytesIO()
+    fitness_fig.savefig(fitness_buf, format="png")
+    fitness_buf.seek(0)
+    plt.close(fitness_fig)
+
     
-    return best_solution, best_fitness, result_text, buf, solver
+    return best_solution, best_fitness, result_text, buf, fitness_buf, solver
+
