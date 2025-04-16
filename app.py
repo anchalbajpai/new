@@ -52,9 +52,9 @@ def run_ga_solver(num_customers, num_trucks, num_drones):
         image = Image.open(route_buf)
         st.image(image, caption="Optimized Vehicle Routes", use_column_width=True)
     with tab3:
-        st.markdown("### Fitness value change over Generations")
+        st.markdown("### Fitness value over Generations")
         image = Image.open(fitness_buf)
-        st.image(image, caption="Fitness value v/s Gteration", use_column_width=True)
+        st.image(image, caption="Fitness value v/s Generation", use_column_width=True)
     
    
 
