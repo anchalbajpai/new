@@ -6,8 +6,8 @@ from PIL import Image
 import io
 
 # --- Import your solvers ---
-from solver import pdstsp_dp_drop_pickup  # CP solver (assumed implemented already)
-from solver2 import run_ga             # GA helper function with updated returns
+from CP import pdstsp_dp_drop_pickup  # CP solver (assumed implemented already)
+from GA import run_ga             # GA helper function with updated returns
 
 # --- Helper function to generate random problem data for GA ---
 def generate_random_data(num_customers):
