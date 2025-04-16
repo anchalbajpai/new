@@ -2,6 +2,10 @@ import numpy as np
 import random
 import matplotlib.pyplot as plt
 import io
+import networkx as nx
+import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
+import math
 
 class PDTSPGeneticAlgorithm:
     def __init__(self, num_trucks, num_drones, num_customers, travel_costs, service_times, time_windows,
@@ -188,40 +192,160 @@ class PDTSPGeneticAlgorithm:
 
         return best_solution, best_fitness
 
-    def plot_routes(self, solution, title='Solution Routes'):
-        # Create a new figure for plotting
-        plt.figure(figsize=(10, 8))
-        # Plot truck routes
+    # def plot_routes(self, solution, title='Solution Routes'):
+    #     plt.figure(figsize=(10, 8))
+
+    #     # Plot truck routes
+    #     for i, truck_route in enumerate(solution['truck_routes']):
+    #         if not truck_route:
+    #             continue
+    #         route_coords = [self.customer_locations[0]] + [self.customer_locations[cust] for cust in truck_route] + [self.customer_locations[0]]
+    #         x, y = zip(*route_coords)
+    #         plt.plot(x, y, color='blue', marker='o', linewidth=2,
+    #                 label='Truck Route' if i == 0 else None)
+    #         # Add T# label near the middle
+    #         mid_idx = len(x) // 2
+    #         plt.text(x[mid_idx], y[mid_idx], f"T{i+1}", fontsize=9, color='blue', weight='bold')
+
+    #     # Plot drone routes (one legend entry only)
+    #     drone_colors = ['green', 'purple', 'red', 'brown', 'cyan', 'pink', 'gray']
+    #     drone_legend_added = False
+
+    #     for i, drone_route in enumerate(solution['drone_routes']):
+    #         if not drone_route:
+    #             continue
+    #         drone_color = drone_colors[i % len(drone_colors)]
+    #         for customer in drone_route:
+    #             trip = [self.customer_locations[0], self.customer_locations[customer], self.customer_locations[0]]
+    #             x, y = zip(*trip)
+    #             line, = plt.plot(
+    #                 x, y,
+    #                 color=drone_color,
+    #                 marker='x',
+    #                 linewidth=2,
+    #                 label='Drone Route' if not drone_legend_added else None
+    #             )
+    #             line.set_dashes([5, 5])  # 5pt line, 5pt gap
+    #             drone_legend_added = True
+
+    #             # Label D# on outbound leg
+    #             mid_x = (x[0] + x[1]) / 2
+    #             mid_y = (y[0] + y[1]) / 2
+    #             plt.text(mid_x, mid_y, f"D{i+1}", fontsize=9, color=drone_color, weight='bold')
+
+
+    #     # Mark depot and customers
+    #     for cust, coord in self.customer_locations.items():
+    #         if cust == 0:
+    #             plt.plot(*coord, 'ks', markersize=10, label='Depot')
+    #         else:
+    #             plt.text(coord[0], coord[1], str(cust), fontsize=9, ha='right', va='bottom')
+
+    #     plt.title(title)
+    #     plt.xlabel('X Coordinate')
+    #     plt.ylabel('Y Coordinate')
+    #     plt.grid(True)
+    #     plt.legend()
+    #     plt.tight_layout()
+
+   
+
+    def plot_routes(self, solution, title='GA Optimized Routes'):
+    # Create a NetworkX graph
+        G = nx.Graph()
+
+        # Use self.customer_locations to get original positions.
+        # Force the depot (node 0) at the center by placing all other nodes in a circle around it.
+        pos = {}
+        n_cust = len(self.customer_locations) - 1  # Number of customers excluding depot
+        depot_coord = (0, 0)  # Depot is at the center
+        
+        # Place depot at the center
+        pos[0] = depot_coord
+        
+        # Place customers in a circular pattern around the depot
+        for idx, j in enumerate(self.customer_locations.keys()):
+            if j == 0:
+                continue  # Skip depot, it is already at (0, 0)
+            angle = 2 * math.pi * idx / n_cust
+            pos[j] = (4 * math.cos(angle), 4 * math.sin(angle))  # Scale radius as needed
+
+        # Build a label dictionary for nodes; label depot as '0'
+        labeldict = {0: "0"}
+        # Optionally, keep any customer labels you want (here we use just the number)
+        for node in self.customer_locations:
+            if node != 0:
+                labeldict[node] = str(node)
+
+        # Plot Truck Routes:
+        # For each truck, force the route to start and end at depot (0).
         for i, truck_route in enumerate(solution['truck_routes']):
             if not truck_route:
                 continue
-            route_coords = [self.customer_locations[0]] + [self.customer_locations[cust] for cust in truck_route] + [self.customer_locations[0]]
-            x, y = zip(*route_coords)
-            plt.plot(x, y, marker='o', label=f'Truck {i+1}', linewidth=2)
-        # Plot drone routes
+            route = [0] + truck_route + [0]
+            for j in range(len(route) - 1):
+                u, v = route[j], route[j + 1]
+                G.add_edge(u, v, vehicle='truck', route_number=i+1)
+
+        # Plot Drone Routes:
+        # For each drone, add an edge from depot to each assigned customer
+        # (We display only a single directed trip: depot → customer)
         for i, drone_route in enumerate(solution['drone_routes']):
             if not drone_route:
                 continue
-            drone_label_added = False
             for customer in drone_route:
-                trip = [self.customer_locations[0], self.customer_locations[customer], self.customer_locations[0]]
-                x, y = zip(*trip)
-                label = f'Drone {i+1}' if not drone_label_added else None
-                plt.plot(x, y, linestyle='--', marker='x', linewidth=1.5, label=label)
-                drone_label_added = True
-        # Mark depot and customer locations
-        for cust, coord in self.customer_locations.items():
-            if cust == 0:
-                plt.plot(*coord, 'ks', markersize=10, label='Depot')
-            else:
-                plt.text(coord[0], coord[1], str(cust), fontsize=10, ha='right')
+                G.add_edge(0, customer, vehicle='drone', route_number=i+1, color='green')
+
+        # Begin plotting.
+        plt.figure(figsize=(10, 8))
+
+        # Draw nodes
+        nx.draw_networkx_nodes(G, pos, node_size=500, node_color='skyblue')
+        nx.draw_networkx_labels(G, pos, labels=labeldict, font_size=10, font_weight='bold')
+
+        # Draw edges: truck routes in solid blue, drone routes in dashed green.
+        truck_edges = [(u, v) for u, v, d in G.edges(data=True) if d.get('vehicle') == 'truck']
+        nx.draw_networkx_edges(G, pos, edgelist=truck_edges, edge_color='blue', width=2)
+
+        drone_edges = [(u, v) for u, v, d in G.edges(data=True) if d.get('vehicle') == 'drone']
+        nx.draw_networkx_edges(G, pos, edgelist=drone_edges, edge_color='green', width=2, style='dashed')
+
+        # Add route labels on the midpoints:
+        # Truck route labels:
+        for i, truck_route in enumerate(solution['truck_routes']):
+            if truck_route:
+                route = [0] + truck_route + [0]
+                xs = [pos[n][0] for n in route]
+                ys = [pos[n][1] for n in route]
+                mid_x = sum(xs) / len(xs)
+                mid_y = sum(ys) / len(ys)
+                plt.text(mid_x, mid_y, f"T{i+1}", fontsize=12, color='blue',
+                        weight='bold', ha='center', va='center')
+
+        # Drone route labels: label each drone edge with D#
+        for i, drone_route in enumerate(solution['drone_routes']):
+            if drone_route:
+                for customer in drone_route:
+                    # For a direct trip, compute the midpoint between depot (0) and customer.
+                    mid_x = (pos[0][0] + pos[customer][0]) / 2
+                    mid_y = (pos[0][1] + pos[customer][1]) / 2
+                    plt.text(mid_x, mid_y, f"D{i+1}", fontsize=12, color='green',
+                            weight='bold', ha='center', va='center')
+
+        # Custom legend
+        truck_line = Line2D([0], [0], color='blue', lw=2, linestyle='-')
+        drone_line = Line2D([0], [0], color='green', lw=2, linestyle='--')
+        plt.legend([truck_line, drone_line], ['Truck Route', 'Drone Route'], loc='best', fontsize=12)
+
         plt.title(title)
         plt.xlabel('X Coordinate')
         plt.ylabel('Y Coordinate')
         plt.grid(True)
-        plt.legend()
+        plt.axis('off')
         plt.tight_layout()
-        # Do not call plt.show() so that the active figure can be captured.
+        plt.show()
+
+
 
     def get_solution_text(self, solution):
         """
@@ -229,6 +353,7 @@ class PDTSPGeneticAlgorithm:
         """
         result_lines = []
         result_lines.append("Optimized Delivery Schedule:\n")
+
         result_lines.append("Truck Routes:")
         for i, truck_route in enumerate(solution['truck_routes']):
             if truck_route:
@@ -239,17 +364,17 @@ class PDTSPGeneticAlgorithm:
                 result_lines.append(f"Truck {i+1}: {route_str}")
             else:
                 result_lines.append(f"Truck {i+1}: No assignment")
+
         result_lines.append("\nDrone Routes:")
         for i, drone_route in enumerate(solution['drone_routes']):
             if drone_route:
-                route_str = "0"
                 for cust in drone_route:
-                    route_str += f" → {cust}"
-                route_str += " → 0"
-                result_lines.append(f"Drone {i+1}: {route_str}")
+                    result_lines.append(f"Drone {i+1}: 0 → {cust} → 0")
             else:
                 result_lines.append(f"Drone {i+1}: No assignment")
+
         return "\n".join(result_lines)
+
 
 # --- Helper Function for Streamlit Integration ---
 def run_ga(num_customers, num_trucks, num_drones, travel_costs, service_times, time_windows, customer_locations,
