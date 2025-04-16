@@ -33,7 +33,7 @@ def generate_random_data(num_customers):
 # --- GA Solver Runner ---
 def run_ga_solver(num_customers, num_trucks, num_drones):
     travel_costs, service_times, time_windows, coordinates = generate_random_data(num_customers)
-    best_solution, best_fitness, result_text, result_img, solver = run_ga(
+    solution, fitness, result_text, route_buf, fitness_buf, solver = run_ga(
         num_customers, num_trucks, num_drones,
         travel_costs, service_times, time_windows, coordinates,
         population_size=30, generations=100, mutation_rate=0.1, crossover_rate=0.7
@@ -41,16 +41,22 @@ def run_ga_solver(num_customers, num_trucks, num_drones):
     st.subheader("Genetic Algorithm (GA) Results")
     
     # Display the GA solution using tabs.
-    tab1, tab2 = st.tabs(["Schedule", "Route Map"])
+    tab1, tab2,tab3 = st.tabs(["Schedule", "Route Map","Fitness Plot"])
     with tab1:
         st.markdown("### Optimized Delivery Schedule")
-        st.code(result_text, language='text')
+        st.code(result_text+"\n", language='text')
+        st.code(fitness, language='text')
+        
     with tab2:
         st.markdown("### Optimized Route Visualization")
-        image = Image.open(result_img)
+        image = Image.open(route_buf)
         st.image(image, caption="Optimized Vehicle Routes", use_column_width=True)
+    with tab3:
+        st.markdown("### Fitness value change over iterations")
+        image = Image.open(fitness_buf)
+        st.image(image, caption="Fitness value v/s iteration", use_column_width=True)
     
-    st.markdown(f"**Best Fitness:** {best_fitness}")
+   
 
 # --- CP Solver Runner ---
 def run_cp_solver(num_customers, kappa_t, kappa_d, beta):
