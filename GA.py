@@ -272,7 +272,7 @@ class PDTSPGeneticAlgorithm:
             pos[j] = (4 * math.cos(angle), 4 * math.sin(angle))  # Scale radius as needed
 
         # Build a label dictionary for nodes; label depot as '0'
-        labeldict = {0: "0"}
+        labeldict = {0: "Depot"}
         # Optionally, keep any customer labels you want (here we use just the number)
         for node in self.customer_locations:
             if node != 0:
