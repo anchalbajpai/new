@@ -1,0 +1,5 @@
+[theme]
+primaryColor = "#0077B6"             # Deep Sky Blue – professional and calming
+backgroundColor = "#FFFFFF"          # White – clean and neutral for main canvas
+secondaryBackgroundColor = "#F2F6FA" # Very light gray-blue – gentle contrast for sidebars/panels
+textColor = "#1C1C1C"                # Almost black – easier on the eyes than pure black
